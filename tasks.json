@@ -1,1 +1,1 @@
-[{"id":1,"description":"Become a SWE"},{"id":2,"description":"keep going"}]
+[{"id":1,"description":"Become a SWE","done":false},{"id":2,"description":"keep going","done":true}]

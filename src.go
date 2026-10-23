@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 )
@@ -11,6 +12,7 @@ import (
 type Task struct {
 	ID          int    `json:"id"`
 	Description string `json:"description"`
+	Done        bool   `json:"done"`
 }
 
 func saveTasks(tasks []Task) {
@@ -27,6 +29,7 @@ func saveTasks(tasks []Task) {
 		fmt.Println("Error encoding JSON", err)
 		os.Exit(1)
 	}
+	file.Close()
 
 }
 
@@ -45,7 +48,7 @@ func readTasks() []Task {
 
 	decoder := json.NewDecoder(jsonFile)
 	err = decoder.Decode(&tasks)
-	if err != nil && err.Error() != "EOF" {
+	if err != nil && !errors.Is(err, io.EOF) {
 		fmt.Println("Error decoding JSON:", err)
 		os.Exit(1)
 	}
@@ -69,13 +72,16 @@ func addTask(description string) {
 
 func listTasks() {
 	tasks := readTasks()
-
 	if len(tasks) == 0 {
 		fmt.Println("There are no tasks")
 		return
 	}
 	for i := 0; i < len(tasks); i++ {
-		fmt.Printf("%d: %s\n", tasks[i].ID, tasks[i].Description)
+		status := " "
+		if tasks[i].Done {
+			status = "x"
+		}
+		fmt.Printf("%d: ["+status+"] %s\n", tasks[i].ID, tasks[i].Description)
 	}
 
 }
@@ -96,6 +102,25 @@ func deleteTasks(id int) {
 	saveTasks(newTasks)
 	fmt.Println("Task deleted succesfully")
 
+}
+
+func doneTask(id int) {
+	tasks := readTasks()
+	found := false
+	for i := range tasks {
+		if tasks[i].ID == id {
+			tasks[i].Done = true
+			found = true
+			break
+		}
+	}
+	if !found {
+		fmt.Println("task not found")
+		os.Exit(1)
+	}
+
+	saveTasks(tasks)
+	fmt.Println("Task marked as done")
 }
 func main() {
 
@@ -122,6 +147,12 @@ func main() {
 		}
 
 		deleteTasks(id)
+	case "done":
+		id, err := strconv.Atoi(os.Args[2])
+		if err != nil {
+			os.Exit(1)
+		}
+		doneTask(id)
 
 	default:
 		fmt.Println("not a valid command")
